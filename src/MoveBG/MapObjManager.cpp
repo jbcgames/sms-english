@@ -487,10 +487,25 @@ u32 TMapObjBaseManager::getActorTypeByEventID(u32 param_1)
 	}
 }
 
+static float SMS_GetMapObjClipDist()
+{
+	static float s_dist = -1.0f;
+	if (s_dist < 0.0f) {
+		const char* e = getenv("SMS_MAPOBJ_DRAW_DISTANCE");
+		s_dist = e ? (float)atof(e) : 4000.0f;
+	}
+	return s_dist;
+}
+
 void TMapObjBaseManager::clipActors(JDrama::TGraphics* param_1)
 {
-	if (!(unk30 & 2))
-		clipActorsAux(param_1, unk38, unk3C);
+	if (!(unk30 & 2)) {
+		float clipFar = unk38;
+		float maxClip = SMS_GetMapObjClipDist();
+		if (maxClip > 0.0f && clipFar > maxClip)
+			clipFar = maxClip;
+		clipActorsAux(param_1, clipFar, unk3C);
+	}
 }
 
 void TMapObjBaseManager::createModelData()

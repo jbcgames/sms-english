@@ -38,6 +38,18 @@ void TLiveManager::manageActor(TLiveActor* actor)
 	TObjManager::manageObj(actor);
 }
 
+#include <stdlib.h>
+#include <MarioUtil/MathUtil.hpp>
+
+static float SMS_GetActorDrawDistance() {
+	static float s_actorDist = -1.0f;
+	if (s_actorDist < 0.0f) {
+		const char* e = getenv("SMS_ACTOR_DRAW_DISTANCE");
+		s_actorDist = e ? (float)atof(e) : 3500.0f;
+	}
+	return s_actorDist;
+}
+
 void TLiveManager::clipActorsAux(JDrama::TGraphics* param_1, float param_2,
                                  float param_3)
 {
@@ -48,6 +60,14 @@ void TLiveManager::clipActorsAux(JDrama::TGraphics* param_1, float param_2,
 	for (int i = 0; i < mObjNum; ++i) {
 		TLiveActor* actor = getObj(i);
 		if (!actor->checkLiveFlag(LIVE_FLAG_UNK100)) {
+			extern TMario* gpMarioOriginal;
+			if ((void*)actor != (void*)gpMarioOriginal && gpCamera != nullptr) {
+				f32 dSq = MsSquaredDist(actor->mPosition, gpCamera->unk124);
+				if (dSq > param_2 * param_2) {
+					actor->onLiveFlag(LIVE_FLAG_CLIPPED_OUT);
+					continue;
+				}
+			}
 			actor->offLiveFlag(LIVE_FLAG_CLIPPED_OUT);
 		} else {
 			JGeometry::TVec3<f32> pos = actor->getPosition();
@@ -67,7 +87,7 @@ void TLiveManager::clipActorsAux(JDrama::TGraphics* param_1, float param_2,
 
 void TLiveManager::clipActors(JDrama::TGraphics* param_1)
 {
-	clipActorsAux(param_1, 4000.0f, 200.0f);
+	clipActorsAux(param_1, SMS_GetActorDrawDistance(), 200.0f);
 }
 
 void TLiveManager::setFlagOutOfCube()

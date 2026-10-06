@@ -194,8 +194,31 @@ void TMapStaticObj::calcUnique(JPABaseEmitter* emitter)
 	}
 }
 
+#include <stdlib.h>
+
+static float SMS_GetStaticObjDrawDistSq()
+{
+	static float s_distSq = -1.0f;
+	if (s_distSq < 0.0f) {
+		const char* e = getenv("SMS_STATIC_DRAW_DISTANCE");
+		float d = e ? (float)atof(e) : 6500.0f;
+		s_distSq = d * d;
+	}
+	return s_distSq;
+}
+
 void TMapStaticObj::perform(u32 cue, JDrama::TGraphics* graphics)
 {
+	if ((cue & CUE_ENTRY) && gpCamera != nullptr) {
+		float maxDistSq = SMS_GetStaticObjDrawDistSq();
+		if (maxDistSq > 0.0f) {
+			float dx = mPosition.x - gpCamera->unk124.x;
+			float dy = mPosition.y - gpCamera->unk124.y;
+			float dz = mPosition.z - gpCamera->unk124.z;
+			if (dx * dx + dy * dy + dz * dz > maxDistSq)
+				return;
+		}
+	}
 	if (cue & CUE_CALC_ANIM) {
 		// An object with a rand-play index at 0x7c plays through
 		// MSRandPlay instead of the positional SE.
@@ -238,6 +261,7 @@ void TMapStaticObj::perform(u32 cue, JDrama::TGraphics* graphics)
 		cue &= ~CUE_ENTRY;
 		mMActor->updateMatAnm();
 	}
+
 
 	if ((!(cue & CUE_ENTRY) || !(mActorData->mFlags & TActorData::FLAG_UNK10)
 	     || gpMirrorModelManager->isUnk18Present())
