@@ -748,8 +748,31 @@ inline void TBaseNPC::performMove_()
 		    = mPollutionAmount * mIndividualParams->mPollutionMax.get();
 }
 
+#include <stdlib.h>
+
+static f32 SMS_GetNpcDrawDistSq()
+{
+	static f32 s_distSq = -1.0f;
+	if (s_distSq < 0.0f) {
+		const char* e = getenv("SMS_NPC_DRAW_DISTANCE");
+		float dist = e ? (float)atof(e) : 2500.0f;
+		s_distSq = dist * dist;
+	}
+	return s_distSq;
+}
+
 void TBaseNPC::perform(u32 cue, JDrama::TGraphics* graphics)
 {
+	if (gpCamera != nullptr && getHolder() == nullptr) {
+		f32 maxDistSq = SMS_GetNpcDrawDistSq();
+		if (maxDistSq > 0.0f) {
+			f32 dSq = MsSquaredDist(mPosition, gpCamera->unk124);
+			if (dSq > maxDistSq) {
+				return;
+			}
+		}
+	}
+
 	if (getActorType() == 0x400001C) {
 		if (!(cue & CUE_MOVE))
 			return;

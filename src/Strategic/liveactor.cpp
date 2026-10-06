@@ -332,6 +332,21 @@ void TLiveActor::moveObject()
 
 void TLiveActor::requestShadow()
 {
+	static int s_disableShadows = -1;
+	if (s_disableShadows < 0) {
+		const char* e = getenv("SMS_DISABLE_SHADOWS");
+		if (e) s_disableShadows = atoi(e) != 0;
+		else {
+#if defined(__aarch64__) || defined(__arm__)
+			s_disableShadows = 1;
+#else
+			s_disableShadows = 0;
+#endif
+		}
+	}
+	if (s_disableShadows)
+		return;
+
 	if (mLiveFlag & (LIVE_FLAG_DEAD | LIVE_FLAG_HIDDEN | LIVE_FLAG_UNK8))
 		return;
 

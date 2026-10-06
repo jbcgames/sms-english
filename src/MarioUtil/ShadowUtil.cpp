@@ -257,8 +257,28 @@ bool TMBindShadowBody::isBodyJoint(int param_1)
 	return false;
 }
 
+static bool SMS_IsShadowsDisabled()
+{
+	static int s_disabled = -1;
+	if (s_disabled < 0) {
+		const char* e = getenv("SMS_DISABLE_SHADOWS");
+		if (e) s_disabled = atoi(e) != 0;
+		else {
+#if defined(__aarch64__) || defined(__arm__)
+			s_disabled = 1;
+#else
+			s_disabled = 0;
+#endif
+		}
+	}
+	return s_disabled != 0;
+}
+
 void TMBindShadowBody::entryDrawShadow()
 {
+	if (SMS_IsShadowsDisabled())
+		return;
+
 	f32 eps = JGeometry::TUtil<f32>::epsilon();
 
 	// TODO: instruction-identical and frame-exact at 0x98 after calc() reads
@@ -445,6 +465,12 @@ void TMBindShadowManager::initEntry(TMBindShadowBody* param_1)
 
 void TMBindShadowManager::perform(u32 cue, JDrama::TGraphics* graphics)
 {
+	if (SMS_IsShadowsDisabled()) {
+		if (cue & 0x20000000)
+			reset();
+		return;
+	}
+
 	if (cue & CUE_CALC_VIEW) {
 		unk49 = 0;
 		VECNormalize(gpLightManager->getLightPos(), &mLightDir);

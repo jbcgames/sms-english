@@ -1801,6 +1801,20 @@ void init_sphere_glist()
 // UNUSED init_sphere_glist(), a TVec3 shinePos, the quads as an inline helper.
 void TModelWaterManager::drawShineShadowVolume(MtxPtr param_1)
 {
+	static int s_disableShadows = -1;
+	if (s_disableShadows < 0) {
+		const char* e = getenv("SMS_DISABLE_SHADOWS");
+		if (e) s_disableShadows = atoi(e) != 0;
+		else {
+#if defined(__aarch64__) || defined(__arm__)
+			s_disableShadows = 1;
+#else
+			s_disableShadows = 0;
+#endif
+		}
+	}
+	if (s_disableShadows)
+		return;
 
 	if (SMSGetMarDirector()->getCurrentMap() == 1) {
 		static bool initialized = false;

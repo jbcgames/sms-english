@@ -89,12 +89,34 @@ void TAfterEffect::calcDashBlurValue()
 	unk15 = 0;
 }
 
+#include <stdlib.h>
+
+static bool SMS_IsReflectionsDisabled()
+{
+	static int s_disabled = -1;
+	if (s_disabled < 0) {
+		const char* e = getenv("SMS_DISABLE_REFLECTIONS");
+		if (e) s_disabled = atoi(e) != 0;
+		else {
+#if defined(__aarch64__) || defined(__arm__)
+			s_disabled = 1;
+#else
+			s_disabled = 0;
+#endif
+		}
+	}
+	return s_disabled != 0;
+}
+
 // checkFlag's if/return body (ScreenUtil.hpp) is what gives retail's r31 for
 // the first site's flag, which also holds the colour's constant 0: an inlined
 // return value is created before the optimiser splits `rect`, so it is
 // coloured first. The ternary spelling left `rect` in r31 and the flag in r30.
 void TAfterEffect::perform(u32 cue, JDrama::TGraphics* graphics)
 {
+	if (SMS_IsReflectionsDisabled())
+		return;
+
 	if (!(unk14 & 1))
 		return;
 

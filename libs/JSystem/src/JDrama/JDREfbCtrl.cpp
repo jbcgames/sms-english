@@ -83,6 +83,26 @@ void TEfbCtrlTex::setTexAttb(const GXTexObj& param_1)
 	setDstSize(TSize(width, height));
 }
 
+#include <stdlib.h>
+#include <string.h>
+
+static bool SMS_IsReflectionsDisabled()
+{
+	static int s_disabled = -1;
+	if (s_disabled < 0) {
+		const char* e = getenv("SMS_DISABLE_REFLECTIONS");
+		if (e) s_disabled = atoi(e) != 0;
+		else {
+#if defined(__aarch64__) || defined(__arm__)
+			s_disabled = 1;
+#else
+			s_disabled = 0;
+#endif
+		}
+	}
+	return s_disabled != 0;
+}
+
 void TEfbCtrlTex::perform(u32 cue, TGraphics* graphics)
 {
 	if (cue & CUE_DRAW_INIT) {
@@ -98,6 +118,13 @@ void TEfbCtrlTex::perform(u32 cue, TGraphics* graphics)
 		                     unk20.check(0x20), mVFilter);
 
 		if (mImagePtr != nullptr) {
+			if (SMS_IsReflectionsDisabled()) {
+				const char* name = getName();
+				if (!name || (strstr(name, "graffit") == nullptr && strstr(name, "gft") == nullptr)) {
+					return;
+				}
+			}
+
 			bool doClear
 			    = IssueGXSetCopyClear(mClearColor, mClearZ, unk20.get());
 			GXSetTexCopySrc(unk10.x1, unk10.y1, unk10.getWidth(),
