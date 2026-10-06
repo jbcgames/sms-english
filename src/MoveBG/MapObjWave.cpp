@@ -10,6 +10,7 @@
 #include <JSystem/JUtility/JUTColor.hpp>
 #include <JSystem/JUtility/JUTTexture.hpp>
 #include <math.h>
+#include <stdlib.h>
 
 // rogue includes needed for matching sinit & bss
 #include <MSound/MSSetSound.hpp>
@@ -107,7 +108,7 @@ f32 TMapObjWave::getStaticTexPos0(f32 v) const { return v * mTexScale0; }
 
 f32 TMapObjWave::getWaveHeight(f32 x, f32 z) const
 {
-	if (mTexture == nullptr)
+	if (mTexture == nullptr || (mWaveHeightX == 0.0f && mWaveHeightZ == 0.0f))
 		return 0.0f;
 
 	// 6.28318f is the unit's own rounded 2*pi; updateTime() wraps the phases
@@ -153,53 +154,8 @@ int TMapObjWave::getAlpha(f32 x, f32 z) const
 		return mAlpha * (1.0f - fabsf(z) * mInvHalfSize);
 }
 
-static bool SMS_IsWaterAnimDisabled()
-{
-	static int s_disabled = -1;
-	if (s_disabled < 0) {
-		const char* e = getenv("SMS_DISABLE_WATER_ANIM");
-		if (e) s_disabled = atoi(e) != 0;
-		else {
-#if defined(__aarch64__) || defined(__arm__)
-			s_disabled = 1;
-#else
-			s_disabled = 0;
-#endif
-		}
-	}
-	return s_disabled != 0;
-}
-
 void TMapObjWave::draw()
 {
-	if (SMS_IsWaterAnimDisabled()) {
-		f32 step = mGridSize * 4.0f;
-		int numQuads = (int)((mHalfSize * 2.0f) / step) + 1;
-		for (f32 z = -mHalfSize; z <= mHalfSize - step; z += step) {
-			f32 z0 = z + SMS_GetMarioZ();
-			f32 z1 = z0 + step;
-
-			GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, numQuads * 2);
-			for (f32 x = -mHalfSize; x <= mHalfSize - step; x += step) {
-				f32 x0     = x + SMS_GetMarioX();
-				int alpha0 = getAlpha(x, z);
-				int alpha1 = getAlpha(x, z + step);
-
-				GXPosition3f32(x0, 0.0f, z0);
-				GXColor4u8(sColor.r, sColor.g, sColor.b, alpha0);
-				GXTexCoord2f32(getStaticTexPos0(x0), getStaticTexPos0(z0));
-				GXTexCoord2f32(0.8f * getStaticTexPos1(x0), getStaticTexPos1(z0));
-
-				GXPosition3f32(x0, 0.0f, z1);
-				GXColor4u8(sColor.r, sColor.g, sColor.b, alpha1);
-				GXTexCoord2f32(getStaticTexPos0(x0), getStaticTexPos0(z1));
-				GXTexCoord2f32(0.8f * getStaticTexPos1(x0), getStaticTexPos1(z1));
-			}
-			GXEnd();
-		}
-		return;
-	}
-
 	for (f32 z = -mHalfSize; z <= mHalfSize - mGridSize; z += mGridSize) {
 		f32 z0 = z + SMS_GetMarioZ();
 		f32 z1 = z0 + mGridSize;
@@ -338,14 +294,28 @@ void TMapObjWave::movement()
 // two bools together add nothing more, so which block retail named is not
 // decidable from the asm. Earlier trial table: docs/catalog/frame-gaps.md,
 // "The two closure cases".
+static int SMS_GetWaterAnimLevel()
+{
+	static int sLevel = -1;
+	if (sLevel < 0) {
+		const char* e = getenv("SMS_DISABLE_WATER_ANIM");
+		sLevel = e ? atoi(e) : 0;
+	}
+	return sLevel;
+}
+
 void TMapObjWave::perform(u32 cue, JDrama::TGraphics* graphics)
 {
 	if (getTexture() == nullptr)
 		return;
 
+	int waterOpt = SMS_GetWaterAnimLevel();
+	if (waterOpt >= 2)
+		return;
+
 	bool move = (cue & CUE_MOVE) != 0;
 	if (move) {
-		if (SMS_IsWaterAnimDisabled())
+		if (waterOpt >= 1)
 			noWave();
 		else
 			movement();
