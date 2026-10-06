@@ -17,6 +17,7 @@
 #include <Map/MapData.hpp>
 #include <macros.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <System/StageUtil.hpp>
 
@@ -1047,7 +1048,28 @@ inline void CPolarSubCamera::ctrlGameCamera_()
 	    && !(unk64 & (CAMERA_FLAG_JET_COASTER_SCENE | CAMERA_FLAG_GATE_DEMO)))
 		mFovy = mCurrentParams->mFovy;
 	mNear = mCurrentParams->mNearClip;
-	mFar  = 300000.0f;
+	static float s_camFar = -1.0f;
+	if (s_camFar < 0.0f) {
+#if defined(__aarch64__) || defined(__arm__)
+		float dist = 0.7f;
+#else
+		float dist = 1.0f;
+#endif
+		if (const char* e = getenv("SMS_DRAW_DISTANCE")) {
+			float f = (float)atof(e);
+			if (f > 0.05f && f <= 3.0f) dist = f;
+		}
+		float farCap = 0.0f;
+		if (const char* e = getenv("SMS_FAR_PLANE")) {
+			farCap = (float)atof(e);
+		}
+		s_camFar = 300000.0f * dist;
+		if (farCap > 0.0f && s_camFar > farCap) {
+			s_camFar = farCap;
+		}
+		if (s_camFar < 1000.0f) s_camFar = 1000.0f;
+	}
+	mFar  = s_camFar;
 
 	if (isNormalDeadDemo()) {
 		ctrlNormalDeadDemo_();

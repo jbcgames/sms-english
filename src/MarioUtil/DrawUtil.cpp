@@ -695,6 +695,30 @@ static f32 sKeepViewClipFar;
 void SetViewFrustumClipCheckPerspective(f32 fovy, f32 aspect, f32 clip_near,
                                         f32 clip_far)
 {
+	static float s_drawDistance = -1.0f;
+	static float s_farPlane = -1.0f;
+	if (s_drawDistance < 0.0f) {
+		if (const char* e = getenv("SMS_DRAW_DISTANCE")) s_drawDistance = (float)atof(e);
+#if defined(__aarch64__) || defined(__arm__)
+		else s_drawDistance = 0.7f;
+#else
+		else s_drawDistance = 1.0f;
+#endif
+		if (s_drawDistance <= 0.05f || s_drawDistance > 3.0f) s_drawDistance = 1.0f;
+	}
+	if (s_farPlane < 0.0f) {
+		if (const char* e = getenv("SMS_FAR_PLANE")) s_farPlane = (float)atof(e);
+		else s_farPlane = 0.0f;
+		if (s_farPlane < 0.0f) s_farPlane = 0.0f;
+	}
+
+	if (s_drawDistance != 1.0f) {
+		clip_far *= s_drawDistance;
+	}
+	if (s_farPlane > 0.0f && clip_far > s_farPlane) {
+		clip_far = s_farPlane;
+	}
+
 	if (fovy != sKeepViewClipFovy || aspect != sKeepViewClipAspect
 	    || clip_near != sKeepViewClipNear || clip_far != sKeepViewClipFar) {
 		sKeepViewClipFovy   = fovy;

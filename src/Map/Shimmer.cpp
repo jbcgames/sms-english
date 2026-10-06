@@ -27,6 +27,21 @@ void TShimmer::far() { mPosition.set(0.0f, 0.0f, 0.0f); }
 
 void TShimmer::perform(u32 cue, JDrama::TGraphics* graphics)
 {
+	static int s_disableShimmer = -1;
+	if (s_disableShimmer < 0) {
+		const char* e = getenv("SMS_DISABLE_SHIMMER");
+		if (e) s_disableShimmer = (atoi(e) != 0);
+		else {
+#if defined(__aarch64__) || defined(__arm__)
+			s_disableShimmer = 1;
+#else
+			s_disableShimmer = 0;
+#endif
+		}
+	}
+	if (s_disableShimmer)
+		return;
+
 	if (gpMarioOriginal->checkFlag(MARIO_FLAG_FLUDD_EMITTING))
 		return;
 
