@@ -120,7 +120,7 @@ void TEfbCtrlTex::perform(u32 cue, TGraphics* graphics)
 		if (mImagePtr != nullptr) {
 			if (SMS_IsReflectionsDisabled()) {
 				const char* name = getName();
-				if (!name || (strstr(name, "graffit") == nullptr && strstr(name, "gft") == nullptr)) {
+				if (name && (strstr(name, "鏡") != nullptr || strstr(name, "mir") != nullptr || strstr(name, "Mir") != nullptr)) {
 					return;
 				}
 			}

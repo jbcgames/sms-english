@@ -315,10 +315,12 @@ void TMapObjWave::perform(u32 cue, JDrama::TGraphics* graphics)
 
 	bool move = (cue & CUE_MOVE) != 0;
 	if (move) {
-		if (waterOpt >= 1)
+		if (waterOpt >= 1) {
 			noWave();
-		else
+			updateTime();
+		} else {
 			movement();
+		}
 	}
 
 	if (cue & CUE_DRAW) {
