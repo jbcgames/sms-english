@@ -8,6 +8,9 @@
 #include <MarioUtil/LightUtil.hpp>
 #include <Camera/CubeManagerBase.hpp>
 
+class TMario;
+extern TMario* gpMarioOriginal;
+
 TLiveManager::TLiveManager(const char* name)
     : TObjManager(name)
     , unk34(nullptr)
@@ -60,7 +63,6 @@ void TLiveManager::clipActorsAux(JDrama::TGraphics* param_1, float param_2,
 	for (int i = 0; i < mObjNum; ++i) {
 		TLiveActor* actor = getObj(i);
 		if (!actor->checkLiveFlag(LIVE_FLAG_UNK100)) {
-			extern TMario* gpMarioOriginal;
 			if ((void*)actor != (void*)gpMarioOriginal && gpCamera != nullptr) {
 				f32 dSq = MsSquaredDist(actor->mPosition, gpCamera->unk124);
 				if (dSq > param_2 * param_2) {
